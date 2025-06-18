@@ -15,12 +15,7 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// GET all recipes
-app.get('/api/recipes', (req, res) => {
-  res.json(recipes);
-});
-
-// Joi schema matching your format
+// Joi schema
 const recipeSchema = Joi.object({
   title: Joi.string().required(),
   description: Joi.string().required(),
@@ -29,12 +24,15 @@ const recipeSchema = Joi.object({
   img_name: Joi.string().required()
 });
 
+// GET all recipes
+app.get('/api/recipes', (req, res) => {
+  res.json(recipes);
+});
+
 // POST new recipe
 app.post('/api/recipes', (req, res) => {
   const { error } = recipeSchema.validate(req.body);
-  if (error) {
-    return res.status(400).json({ error: error.details[0].message });
-  }
+  if (error) return res.status(400).json({ error: error.details[0].message });
 
   const newRecipe = {
     _id: recipes.length + 1,
@@ -45,10 +43,35 @@ app.post('/api/recipes', (req, res) => {
   res.status(201).json({ success: true, recipe: newRecipe });
 });
 
+// PUT edit recipe
+app.put('/api/recipes/:id', (req, res) => {
+  const { error } = recipeSchema.validate(req.body);
+  if (error) return res.status(400).json({ error: error.details[0].message });
+
+  const id = parseInt(req.params.id);
+  const index = recipes.findIndex(r => r._id === id);
+  if (index === -1) return res.status(404).json({ error: "Recipe not found" });
+
+  const updatedRecipe = { _id: id, ...req.body };
+  recipes[index] = updatedRecipe;
+  res.status(200).json(updatedRecipe);
+});
+
+// DELETE recipe
+app.delete('/api/recipes/:id', (req, res) => {
+  const id = parseInt(req.params.id);
+  const index = recipes.findIndex(r => r._id === id);
+  if (index === -1) return res.status(404).json({ error: "Recipe not found" });
+
+  recipes.splice(index, 1);
+  res.status(200).json({ message: "Deleted successfully" });
+});
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
 });
+
 
 
 
